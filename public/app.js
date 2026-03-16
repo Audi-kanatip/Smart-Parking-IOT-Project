@@ -11,6 +11,8 @@ const fs = firebase.firestore();
 // Global Charts
 let revChart = null;
 let pkChart = null;
+let durChart = null; // เพิ่มใหม่
+let occChart = null; // เพิ่มใหม่
 
 // --- INITIAL CHECK (เช็คสถานะล็อกอินทันทีที่เปิดหน้า) ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -64,40 +66,33 @@ db.ref('parking_status').on('value', (snap) => {
     }
 });
 
-// --- ADMIN DATA & DASHBOARD ---
-// --- ADMIN DATA & DASHBOARD (FULL VERSION) ---
+// --- ADMIN DATA & DASHBOARD (FULL VERSION - USE TOTAL SECONDS) ---
 function loadAdminData() {
     const now = new Date();
-    // ฟอร์แมตวันที่ปัจจุบันเป็น DD-MM-YYYY เพื่อเทียบกับข้อมูลใน DB
     const todayStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
     
-    // อัปเดตตัวเลขวันที่บนหน้าจอ
     const dateLabel = document.getElementById('current-date-label');
     if (dateLabel) dateLabel.innerText = "ข้อมูล ณ วันที่: " + todayStr + " " + now.toLocaleTimeString('th-TH');
 
-    // เรียกข้อมูลจาก Firestore แบบ Real-time
     fs.collection("ParkingLogs").orderBy("created_at", "desc").onSnapshot((snap) => {
         const activeBody = document.getElementById('active-table-body');
         const historyBody = document.getElementById('history-table-body');
         
-        // ล้างข้อมูลเก่าในตารางก่อน Render ใหม่
         if (activeBody) activeBody.innerHTML = '';
         if (historyBody) historyBody.innerHTML = '';
         
-        // ตัวแปรสำหรับสรุปผล (Stats & Charts)
         let activeCount = 0;
         let todayRev = 0;
         let todayTrans = 0;
         let revenue7Days = {};
         let peakData = new Array(24).fill(0);
         let durationCounts = [0, 0, 0, 0]; // [0-5น., 5-15น., 15-30น., 30น.+]
-        window.dailyVehicleCount = {}; // เก็บจำนวนรถสะสมรายวัน
+        window.dailyVehicleCount = {}; 
 
         snap.forEach((doc) => {
             const d = doc.data();
             const status = (d.status || "").toLowerCase().trim();
 
-            // 1. จัดการตาราง "รถที่กำลังจอดอยู่" (Active)
             if (status === "parked" || status === "active") {
                 activeCount++;
                 if (activeBody) {
@@ -113,12 +108,9 @@ function loadAdminData() {
                         </tr>`;
                 }
             } 
-            
-            // 2. จัดการตาราง "ประวัติการเข้า-ออก" (Completed) และการคำนวณกราฟ
             else if (status === "completed") {
-                todayTrans++; // นับจำนวนรายการทั้งหมด
+                todayTrans++; 
                 
-                // ตาราง History แยกคอลัมน์ เข้า และ ออก
                 if (historyBody) {
                     historyBody.innerHTML += `
                         <tr>
@@ -134,9 +126,8 @@ function loadAdminData() {
                         </tr>`;
                 }
 
-                // --- LOGIC การคำนวณเพื่อใช้ใน Chart ---
+                // --- LOGIC การคำนวณ CHART ---
 
-                // กราฟรายได้ และ รถสะสมรายวัน (เช็คเฉพาะวันที่ออก)
                 const dateKey = d.exit_date;
                 if (dateKey) {
                     revenue7Days[dateKey] = (revenue7Days[dateKey] || 0) + (d.fee || 0);
@@ -144,58 +135,46 @@ function loadAdminData() {
                     if (dateKey === todayStr) todayRev += (d.fee || 0);
                 }
 
-                // กราฟ Peak Hours (นับจากเวลาที่เข้า)
                 if (d.entry_time) {
                     const hr = parseInt(d.entry_time.split(':')[0]);
                     if (!isNaN(hr)) peakData[hr]++;
                 }
 
-                // กราฟสัดส่วนนาทีจำลอง (Duration Distribution)
-                let totalMins = 0;
-                if (d.duration_minutes) {
-                    totalMins = d.duration_minutes; // กรณีมี field นาทีตรงๆ
-                } else if (d.duration_summary) {
-                    // แงะตัวเลขนาทีจาก string "X ชม. Y นาที"
-                    const minsMatch = d.duration_summary.match(/(\d+)\s*นาที/);
-                    const hrsMatch = d.duration_summary.match(/(\d+)\s*ชม/);
-                    const totalFromSummary = (hrsMatch ? parseInt(hrsMatch[1]) * 60 : 0) + (minsMatch ? parseInt(minsMatch[1]) : 0);
-                    totalMins = totalFromSummary;
-                }
+                // ✅ ใช้ total_seconds ตามที่คุณแนะนำ (แม่นยำที่สุด)
+                // แปลงวินาทีเป็นนาที: 36399 / 60 = 606.65 นาที
+                let totalMins = d.total_seconds ? (d.total_seconds / 60) : 0;
 
-                if (totalMins <= 5) durationCounts[0]++;
-                else if (totalMins <= 15) durationCounts[1]++;
-                else if (totalMins <= 30) durationCounts[2]++;
-                else durationCounts[3]++;
+                // จัดกลุ่มนาทีจำลอง
+                if (totalMins > 0 && totalMins <= 5) {
+                    durationCounts[0]++;
+                } else if (totalMins > 5 && totalMins <= 15) {
+                    durationCounts[1]++;
+                } else if (totalMins > 15 && totalMins <= 30) {
+                    durationCounts[2]++;
+                } else if (totalMins > 30) {
+                    durationCounts[3]++; // รถที่จอด 36399 วินาที (10 ชม.) จะมาลงที่นี่แน่นอน
+                }
             }
         });
 
-        // อัปเดตตัวเลข Stats บน Dashboard
         if (document.getElementById('today-revenue')) 
             document.getElementById('today-revenue').innerText = todayRev.toLocaleString() + " ฿";
-        
         if (document.getElementById('admin-occupied')) 
             document.getElementById('admin-occupied').innerText = activeCount;
-            
         if (document.getElementById('active-badge-count')) 
             document.getElementById('active-badge-count').innerText = activeCount + " คัน";
-            
         if (document.getElementById('total-transactions')) 
             document.getElementById('total-transactions').innerText = todayTrans;
 
-        // เรียกฟังก์ชันวาดกราฟทั้ง 4 อัน
         updateCharts(revenue7Days, peakData, durationCounts);
-
-    }, (err) => {
-        console.error("Firestore Error:", err);
-        alert("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
     });
 }
 
-function updateCharts(revData, peakData) {
+function updateCharts(revData, peakData, durDataRaw) {
     const labels = Object.keys(revData).sort().slice(-7);
     const values = labels.map(k => revData[k]);
 
-    // 1. กราฟรายได้
+    // 1. กราฟรายได้ (อันเก่าอย่ายุ่ง)
     if (revChart) revChart.destroy();
     revChart = new Chart(document.getElementById('revenueChart'), {
         type: 'bar',
@@ -217,7 +196,7 @@ function updateCharts(revData, peakData) {
         }
     });
 
-    // 2. กราฟจำนวนรถเข้า (บังคับเลขจำนวนเต็ม)
+    // 2. กราฟจำนวนรถเข้า (อันเก่าอย่ายุ่ง)
     if (pkChart) pkChart.destroy();
     pkChart = new Chart(document.getElementById('peakChart'), {
         type: 'line',
@@ -243,6 +222,57 @@ function updateCharts(revData, peakData) {
                         callback: function(value) {
                             if (value % 1 === 0) return value; // คืนค่าเฉพาะเลขเต็ม
                         }
+                    }
+                }
+            }
+        }
+    });
+
+    // --- เพิ่มใหม่ 3. กราฟสัดส่วนระยะเวลาการจอด (นาทีจำลอง) ---
+    if (durChart) durChart.destroy();
+    durChart = new Chart(document.getElementById('durationChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['0-5 นาที', '5-15 นาที', '15-30 นาที', '30 นาที+'],
+            datasets: [{
+                data: durDataRaw, // ข้อมูลที่ส่งมาจาก loadAdminData
+                backgroundColor: ['#4cc9f0', '#4361ee', '#3f37c9', '#f72585'],
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+            }
+        }
+    });
+
+    // --- เพิ่มใหม่ 4. กราฟจำนวนรถสะสม 7 วันล่าสุด (เลขจำนวนเต็ม) ---
+    const vehicleCounts = labels.map(k => window.dailyVehicleCount[k] || 0); 
+    if (occChart) occChart.destroy();
+    occChart = new Chart(document.getElementById('occupancyChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'จำนวนรถ (คัน)',
+                data: vehicleCounts,
+                backgroundColor: '#f39c12',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0,
+                        callback: function(value) { return value + ' คัน'; }
                     }
                 }
             }
