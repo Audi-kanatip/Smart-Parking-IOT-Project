@@ -249,7 +249,7 @@
             >
               <i class="bi bi-clock-history"></i>
             </div>
-            <h6 class="text-muted">รายการวันนี้</h6>
+            <h6 class="text-muted">จำนวนรถทั้งหมดที่เคยมาจอด</h6>
             <h2 class="fw-bold" id="total-transactions">0</h2>
           </div>
         </div>
@@ -296,19 +296,20 @@
         <div
           class="p-4 border-bottom d-flex justify-content-between align-items-center"
         >
-          <h5 class="mb-0 fw-bold">รถที่กำลังจอด (Active)</h5>
+          <h5 class="mb-0 fw-bold">รถที่กำลังจอดในลานจอดขณะนี้</h5>
           <span class="badge bg-primary rounded-pill" id="active-badge-count"
             >0 คัน</span
           >
         </div>
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
-                <th class="ps-4">ทะเบียน</th>
+                <th class="text-center">ทะเบียน</th>
                 <th>เวลาเข้า</th>
-                <th>รูปภาพ</th>
+                <th>ภาพขาเข้า</th>
                 <th class="text-center">สถานะ</th>
+                <th class="text-center">ค่าจอดขณะนี้</th>
               </tr>
             </thead>
             <tbody id="active-table-body"></tbody>
@@ -324,12 +325,13 @@
           <table class="table table-sm table-hover align-middle mb-0">
             <thead>
               <tr class="text-muted">
-                <th class="ps-4">ทะเบียน</th>
+                <th class="text-center">ทะเบียน</th>
                 <th>วันเวลาที่เข้า</th>
                 <th>วันเวลาที่ออก</th>
-                <th class="text-center">รูปเข้า-ออก</th>
-                <th class="text-center">ระยะเวลา</th>
-                <th class="text-end pe-4">ค่าบริการ</th>
+                <th class="text-center">ระยะเวลาที่จอด</th>
+                <th class="text-center">ค่าบริการ</th>
+                <th class="text-center">ภาพขาเข้า</th>
+                <th class="text-center">ภาพขาออก</th>                
               </tr>
             </thead>
             <tbody id="history-table-body"></tbody>
