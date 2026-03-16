@@ -4,238 +4,288 @@ const firebaseConfig = {
     projectId: "smart-parking-system-d6e6c"
 };
 
-// --- 🛑 ประกาศตัวแปร Chart ไว้ตรงนี้ (Global Scope) ---
-let revChart = null;
-let pkChart = null;
-let durChart = null;
-let occupancyChart = null; // เพิ่มให้ครบตาม HTML ของคุณ
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const fs = firebase.firestore();
 
-// --- LOGIN LOGIC ---
-function loginAdmin() {
-    const pass = prompt("Owner Password:");
-    if (pass === "123") {
-        const adminSec = document.getElementById('admin-section');
-        if (adminSec) {
-            adminSec.style.display = 'block';
-            loadAdminData();
-            window.scrollTo({ top: adminSec.offsetTop, behavior: 'smooth' });
-        }
-    } else if (pass !== null) {
-        alert("รหัสผ่านไม่ถูกต้อง");
-    }
-}
+// Global Charts
+let revChart = null;
+let pkChart = null;
 
-// --- USER ROLE: REALTIME SLOTS (RTDB) ---
-db.ref('parking_status').on('value', (snap) => {
-    const data = snap.val();
-    if (!data) return;
-    const freeCount = 6 - (data.total_occupied || 0);
-    const freeElem = document.getElementById('free-count');
-    if (freeElem) freeElem.innerText = freeCount;
-
-    const container = document.getElementById('slots-container');
-    if (container) {
-        container.innerHTML = '';
-        for (let i = 0; i < 6; i++) {
-            const occ = data[`slot_${i}`];
-            container.innerHTML += `
-                <div class="col-4">
-                    <div class="parking-slot ${occ ? 'bg-occupied' : 'bg-vacant'} text-center p-3 mb-2 shadow-sm" style="border-radius:10px; color:white; min-height:80px;">
-                        <i class="bi ${occ ? 'bi-car-front-fill' : 'bi-unlock-fill'} fs-4"></i><br>
-                        <b>ช่อง ${i + 1}</b>
-                    </div>
-                </div>`;
-        }
+// --- INITIAL CHECK (เช็คสถานะล็อกอินทันทีที่เปิดหน้า) ---
+document.addEventListener("DOMContentLoaded", () => {
+    const isAdmin = localStorage.getItem("adminSession");
+    if (isAdmin === "active") {
+        showAdminView();
     }
 });
 
-// --- ADMIN ROLE: LOAD DATA & REFRESH TABLES ---
+// --- NAVIGATION LOGIC ---
+function loginAdmin() {
+    const pass = prompt("กรุณากรอกรหัสผ่านเจ้าของลานจอด:");
+    if (pass === "123") {
+        localStorage.setItem("adminSession", "active");
+        showAdminView();
+    } else if (pass !== null) {
+        alert("รหัสผ่านไม่ถูกต้อง!");
+    }
+}
+
+function logoutAdmin() {
+    localStorage.removeItem("adminSession");
+    location.reload();
+}
+
+function showAdminView() {
+    document.getElementById('user-view').style.display = 'none';
+    document.getElementById('admin-section').style.display = 'block';
+    document.getElementById('nav-auth-buttons').style.display = 'none';
+    document.getElementById('admin-logout-btn').style.display = 'block';
+    loadAdminData();
+}
+
+// --- REAL-TIME SLOTS (FOR USERS) ---
+db.ref('parking_status').on('value', (snap) => {
+    const data = snap.val();
+    const container = document.getElementById('slots-container');
+    if (!data || !container) return;
+
+    container.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+        const isOccupied = data[`slot_${i}`];
+        container.innerHTML += `
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="parking-slot ${isOccupied ? 'bg-occupied' : 'bg-vacant'}">
+                    <i class="bi ${isOccupied ? 'bi-car-front-fill' : 'bi-p-square'} fs-1 mb-2"></i>
+                    <span class="fw-bold">ช่อง ${i + 1}</span>
+                    <small class="opacity-75">${isOccupied ? 'ไม่ว่าง' : 'ว่าง'}</small>
+                </div>
+            </div>`;
+    }
+});
+
+// --- ADMIN DATA & DASHBOARD ---
+// --- ADMIN DATA & DASHBOARD (FULL VERSION) ---
 function loadAdminData() {
     const now = new Date();
+    // ฟอร์แมตวันที่ปัจจุบันเป็น DD-MM-YYYY เพื่อเทียบกับข้อมูลใน DB
     const todayStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
     
-    // อัปเดตวันที่ปัจจุบันที่หน้า Dashboard
+    // อัปเดตตัวเลขวันที่บนหน้าจอ
     const dateLabel = document.getElementById('current-date-label');
-    if (dateLabel) dateLabel.innerText = "ข้อมูล ณ วันที่ " + todayStr;
+    if (dateLabel) dateLabel.innerText = "ข้อมูล ณ วันที่: " + todayStr + " " + now.toLocaleTimeString('th-TH');
 
+    // เรียกข้อมูลจาก Firestore แบบ Real-time
     fs.collection("ParkingLogs").orderBy("created_at", "desc").onSnapshot((snap) => {
         const activeBody = document.getElementById('active-table-body');
         const historyBody = document.getElementById('history-table-body');
         
+        // ล้างข้อมูลเก่าในตารางก่อน Render ใหม่
         if (activeBody) activeBody.innerHTML = '';
         if (historyBody) historyBody.innerHTML = '';
         
+        // ตัวแปรสำหรับสรุปผล (Stats & Charts)
         let activeCount = 0;
-        let todayRevenue = 0;
-        let revenue7Days = {}; 
+        let todayRev = 0;
+        let todayTrans = 0;
+        let revenue7Days = {};
         let peakData = new Array(24).fill(0);
-        let durationData = [0, 0, 0, 0]; 
+        let durationCounts = [0, 0, 0, 0]; // [0-5น., 5-15น., 15-30น., 30น.+]
+        window.dailyVehicleCount = {}; // เก็บจำนวนรถสะสมรายวัน
 
         snap.forEach((doc) => {
             const d = doc.data();
-            const currentStatus = d.status ? d.status.toLowerCase().trim() : "";
+            const status = (d.status || "").toLowerCase().trim();
 
-            // --- ตารางรถที่กำลังจอด (Active) ---
-            if (currentStatus === "parked" || currentStatus === "active") {
+            // 1. จัดการตาราง "รถที่กำลังจอดอยู่" (Active)
+            if (status === "parked" || status === "active") {
                 activeCount++;
                 if (activeBody) {
                     activeBody.innerHTML += `
                         <tr>
-                            <td><b class="text-primary">${d.plate}</b></td>
-                            <td>${d.entry_date} <span class="text-muted">| ${d.entry_time}</span></td>
+                            <td class="ps-4"><span class="fw-bold text-primary">${d.plate}</span></td>
+                            <td>
+                                <small class="text-muted">${d.entry_date}</small><br>
+                                <i class="bi bi-clock-fill text-warning me-1"></i><b>${d.entry_time}</b>
+                            </td>
                             <td><img src="${d.photo_url_in}" class="img-thumb" onclick="window.open(this.src)"></td>
-                            <td class="text-center"><span class="badge bg-warning text-dark">กำลังจอด</span></td>
+                            <td class="text-center"><span class="badge bg-warning text-dark badge-custom">จอดอยู่</span></td>
                         </tr>`;
                 }
             } 
             
-            // --- ตารางประวัติการเข้า-ออก (History) ---
-            else if (currentStatus === "completed") {
+            // 2. จัดการตาราง "ประวัติการเข้า-ออก" (Completed) และการคำนวณกราฟ
+            else if (status === "completed") {
+                todayTrans++; // นับจำนวนรายการทั้งหมด
+                
+                // ตาราง History แยกคอลัมน์ เข้า และ ออก
                 if (historyBody) {
                     historyBody.innerHTML += `
                         <tr>
-                            <td><b class="text-dark">${d.plate}</b></td>
+                            <td class="ps-4"><b>${d.plate}</b></td>
                             <td><small class="text-muted">${d.entry_date}</small><br><b>${d.entry_time}</b></td>
-                            <td><small class="text-muted">${d.exit_date || d.entry_date}</small><br><b class="text-danger">${d.exit_time || '-'}</b></td>
-                            <td class="text-center"><img src="${d.photo_url_in}" class="img-thumb" onclick="window.open(this.src)"></td>
-                            <td class="text-center"><img src="${d.photo_url_out || d.photo_url_in}" class="img-thumb" onclick="window.open(this.src)"></td>
-                            <td class="text-center"><span class="badge bg-light text-primary border">${d.duration_summary || '-'}</span></td>
-                            <td class="text-end fw-bold">${(d.fee || 0).toLocaleString()} ฿</td>
+                            <td><small class="text-muted">${d.exit_date || d.entry_date}</small><br><b class="text-danger">${d.exit_time}</b></td>
+                            <td class="text-center">
+                                <img src="${d.photo_url_in}" class="img-thumb me-1" title="รูปเข้า" onclick="window.open(this.src)">
+                                <img src="${d.photo_url_out}" class="img-thumb" title="รูปออก" onclick="window.open(this.src)">
+                            </td>
+                            <td class="text-center"><span class="badge bg-light text-dark border">${d.duration_summary || '-'}</span></td>
+                            <td class="text-end pe-4 fw-bold text-success">${(d.fee || 0).toLocaleString()} ฿</td>
                         </tr>`;
                 }
 
-                // สรุปรายได้วันนี้
-                if (d.exit_date === todayStr) {
-                    todayRevenue += (d.fee || 0);
+                // --- LOGIC การคำนวณเพื่อใช้ใน Chart ---
+
+                // กราฟรายได้ และ รถสะสมรายวัน (เช็คเฉพาะวันที่ออก)
+                const dateKey = d.exit_date;
+                if (dateKey) {
+                    revenue7Days[dateKey] = (revenue7Days[dateKey] || 0) + (d.fee || 0);
+                    window.dailyVehicleCount[dateKey] = (window.dailyVehicleCount[dateKey] || 0) + 1;
+                    if (dateKey === todayStr) todayRev += (d.fee || 0);
                 }
 
-                // ข้อมูลกราฟรายได้ 7 วัน
-                const dateKey = d.exit_date || d.entry_date;
-                revenue7Days[dateKey] = (revenue7Days[dateKey] || 0) + (d.fee || 0);
-
-                // ข้อมูลกราฟ Peak Hours (ดึงจากเวลาเข้า)
+                // กราฟ Peak Hours (นับจากเวลาที่เข้า)
                 if (d.entry_time) {
                     const hr = parseInt(d.entry_time.split(':')[0]);
                     if (!isNaN(hr)) peakData[hr]++;
                 }
+
+                // กราฟสัดส่วนนาทีจำลอง (Duration Distribution)
+                let totalMins = 0;
+                if (d.duration_minutes) {
+                    totalMins = d.duration_minutes; // กรณีมี field นาทีตรงๆ
+                } else if (d.duration_summary) {
+                    // แงะตัวเลขนาทีจาก string "X ชม. Y นาที"
+                    const minsMatch = d.duration_summary.match(/(\d+)\s*นาที/);
+                    const hrsMatch = d.duration_summary.match(/(\d+)\s*ชม/);
+                    const totalFromSummary = (hrsMatch ? parseInt(hrsMatch[1]) * 60 : 0) + (minsMatch ? parseInt(minsMatch[1]) : 0);
+                    totalMins = totalFromSummary;
+                }
+
+                if (totalMins <= 5) durationCounts[0]++;
+                else if (totalMins <= 15) durationCounts[1]++;
+                else if (totalMins <= 30) durationCounts[2]++;
+                else durationCounts[3]++;
             }
         });
 
-        // อัปเดตตัวเลขหน้า Dashboard
-        const revenueElem = document.getElementById('today-revenue');
-        if (revenueElem) revenueElem.innerText = todayRevenue.toLocaleString() + " ฿";
+        // อัปเดตตัวเลข Stats บน Dashboard
+        if (document.getElementById('today-revenue')) 
+            document.getElementById('today-revenue').innerText = todayRev.toLocaleString() + " ฿";
+        
+        if (document.getElementById('admin-occupied')) 
+            document.getElementById('admin-occupied').innerText = activeCount;
+            
+        if (document.getElementById('active-badge-count')) 
+            document.getElementById('active-badge-count').innerText = activeCount + " คัน";
+            
+        if (document.getElementById('total-transactions')) 
+            document.getElementById('total-transactions').innerText = todayTrans;
 
-        const occupiedElem = document.getElementById('admin-occupied');
-        if (occupiedElem) occupiedElem.innerText = activeCount;
+        // เรียกฟังก์ชันวาดกราฟทั้ง 4 อัน
+        updateCharts(revenue7Days, peakData, durationCounts);
 
-        // เรียกฟังก์ชันวาดกราฟ (ถ้ามี)
-        if (typeof updateCharts === "function") {
-            updateCharts(revenue7Days, peakData, durationData);
-        }
-
-    }, (err) => console.error("Firestore Error:", err));
+    }, (err) => {
+        console.error("Firestore Error:", err);
+        alert("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
+    });
 }
 
-function updateCharts(revData, peakData, durData) {
-    // 1. กราฟรายได้
+function updateCharts(revData, peakData) {
     const labels = Object.keys(revData).sort().slice(-7);
     const values = labels.map(k => revData[k]);
-    const ctx1 = document.getElementById('revenueChart');
-    
-    if (ctx1) {
-        // ✅ เช็คก่อนว่ามี Chart เดิมอยู่จริงไหม และประกาศตัวแปรไว้ข้างนอกแล้ว
-        if (revChart instanceof Chart) {
-            revChart.destroy();
-        }
-        revChart = new Chart(ctx1, {
-            type: 'bar',
-            data: { 
-                labels: labels, 
-                datasets: [{ label: 'รายได้ (บาท)', data: values, backgroundColor: '#2ecc71' }] 
-            },
-            options: { responsive: true }
-        });
-    }
 
-    // 2. กราฟ Peak Hours
-    const ctx2 = document.getElementById('peakChart');
-    if (ctx2) {
-        if (pkChart instanceof Chart) {
-            pkChart.destroy();
+    // 1. กราฟรายได้
+    if (revChart) revChart.destroy();
+    revChart = new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{ label: 'รายได้', data: values, backgroundColor: '#4361ee', borderRadius: 8 }]
+        },
+        options: { 
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        // แสดงเครื่องหมาย ฿ และทำให้เป็นเลขจำนวนเต็ม
+                        callback: function(value) { return value.toLocaleString() + ' ฿'; }
+                    }
+                } 
+            } 
         }
-        pkChart = new Chart(ctx2, {
-            type: 'line',
-            data: { 
-                labels: Array.from({length: 24}, (_, i) => i + ":00"), 
-                datasets: [{ label: 'จำนวนรถเข้า', data: peakData, borderColor: '#3498db', fill: true, backgroundColor: 'rgba(52, 152, 219, 0.1)' }] 
+    });
+
+    // 2. กราฟจำนวนรถเข้า (บังคับเลขจำนวนเต็ม)
+    if (pkChart) pkChart.destroy();
+    pkChart = new Chart(document.getElementById('peakChart'), {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => i + ":00"),
+            datasets: [{ 
+                label: 'จำนวนรถเข้า', 
+                data: peakData, 
+                borderColor: '#4cc9f0', 
+                fill: true, 
+                backgroundColor: 'rgba(76, 201, 240, 0.1)', 
+                tension: 0.4 
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,      // บังคับกระโดดทีละ 1 หน่วย
+                        precision: 0,     // ไม่แสดงทศนิยม
+                        callback: function(value) {
+                            if (value % 1 === 0) return value; // คืนค่าเฉพาะเลขเต็ม
+                        }
+                    }
+                }
             }
-        });
-    }
-    
-    // ทำแบบเดียวกันกับ durChart และ occupancyChart...
+        }
+    });
 }
 
-// --- SEARCH LOGIC (FIXED TIMEZONE VERSION) ---
+// --- USER SEARCH LOGIC ---
 function searchVehicle() {
-    const plateInput = document.getElementById('search-plate').value.trim();
+    const plate = document.getElementById('search-plate').value.trim();
     const resultDiv = document.getElementById('search-result');
+    if (!plate) return alert("กรุณาระบุเลขทะเบียน");
 
-    if (!plateInput) {
-        alert("กรุณากรอกเลขทะเบียนรถ");
-        return;
-    }
+    resultDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div></div>';
 
-    resultDiv.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary"></div><p>กำลังคำนวณค่าบริการ...</p></div>';
-
-    fs.collection("ParkingLogs").where("plate", "==", plateInput).orderBy("created_at", "desc").limit(1).get().then((snap) => {
+    fs.collection("ParkingLogs").where("plate", "==", plate).orderBy("created_at", "desc").limit(1).get().then((snap) => {
         if (snap.empty) {
-            resultDiv.innerHTML = `<div class="alert alert-danger">ไม่พบทะเบียน <b>${plateInput}</b></div>`;
+            resultDiv.innerHTML = `<div class="alert alert-light border shadow-sm text-center">ไม่พบข้อมูลทะเบียน <b>${plate}</b></div>`;
             return;
         }
-
-        snap.forEach((doc) => {
+        snap.forEach(doc => {
             const d = doc.data();
-            const isParked = (d.status && d.status.toLowerCase().trim() === 'parked');
-            let currentFee = d.fee || 0;
-            let displayDuration = d.duration_summary || '-';
+            const isParked = (d.status === 'parked' || d.status === 'active');
+            let fee = d.fee || 0;
+            let duration = d.duration_summary || '-';
 
-            if (isParked && d.created_at) {
-                const nowMs = Date.now(); 
-                const entryMs = d.created_at.toMillis(); 
-                
-                // แก้บั๊ก 7 ชม. โดยการบวกส่วนต่างที่หายไปคืน
-                const diffMs = nowMs - entryMs;
-                const correctedDiffMs = diffMs + (7 * 60 * 60 * 1000); 
-
-                const totalMinutes = Math.max(1, Math.ceil(correctedDiffMs / (1000 * 60)));
-                currentFee = totalMinutes * 10;
-                
-                const h = Math.floor(totalMinutes / 60);
-                const m = totalMinutes % 60;
-                displayDuration = `${h > 0 ? h + ' ชม. ' : ''}${m} นาที`;
+            if (isParked) {
+                const diffMs = (Date.now() - d.created_at.toMillis()) + (7 * 3600000); // Correct for GMT+7
+                const mins = Math.max(1, Math.ceil(diffMs / 60000));
+                fee = mins * 10;
+                duration = `${Math.floor(mins/60)} ชม. ${mins%60} นาที`;
             }
 
             resultDiv.innerHTML = `
-                <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; border-left: 8px solid ${isParked ? '#ffa502' : '#2ed573'} !important;">
-                    <div class="card-header ${isParked ? 'bg-warning' : 'bg-success'} text-dark fw-bold py-3 d-flex justify-content-between">
-                        <span>ทะเบียน: ${d.plate}</span>
-                        <span>${new Date().toLocaleTimeString('th-TH')}</span>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-5 text-center mb-3 mb-md-0">
-                                <img src="${d.photo_url_in}" class="img-fluid rounded shadow" style="height:180px; width:100%; object-fit:cover;">
-                            </div>
-                            <div class="col-md-7">
-                                <h5 class="fw-bold">สถานะ: ${isParked ? 'กำลังจอด' : 'ออกแล้ว'}</h5>
-                                <p class="mb-1">เข้า: ${d.entry_date} | ${d.entry_time}</p>
-                                <p class="mb-1">เวลาจอดสะสม: <span class="text-primary fw-bold">${displayDuration}</span></p>
-                                <hr>
-                                <h3 class="text-danger fw-bold">${currentFee.toLocaleString()} ฿</h3>
-                            </div>
+                <div class="card border-0 shadow-lg p-4" style="border-radius:20px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-4"><img src="${d.photo_url_in}" class="img-fluid rounded-4"></div>
+                        <div class="col-md-8">
+                            <span class="badge ${isParked ? 'bg-warning' : 'bg-success'} mb-2">${isParked ? 'กำลังจอด' : 'ออกแล้ว'}</span>
+                            <h3 class="fw-bold">${d.plate}</h3>
+                            <p class="mb-1 text-muted">เวลาเข้า: ${d.entry_date} ${d.entry_time}</p>
+                            <p class="mb-3 text-muted">เวลาจอดรวม: ${duration}</p>
+                            <h2 class="text-primary fw-bold">${fee.toLocaleString()} บาท</h2>
                         </div>
                     </div>
                 </div>`;
