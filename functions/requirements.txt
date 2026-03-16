@@ -1,0 +1,6 @@
+firebase-functions
+firebase-admin
+requests
+python-dateutil
+opencv-python-headless
+numpy
