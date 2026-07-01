@@ -56,24 +56,31 @@ function getEstimatedFee(createdAt) {
   return mins * 10;
 }
 
-// --- REAL-TIME SLOTS ---
+// --- REAL-TIME SLOTS (อัปเดตใหม่เพื่อให้แสดงทั้ง 2 หน้า) ---
 db.ref("parking_status").on("value", (snap) => {
   const data = snap.val();
-  const container = document.getElementById("slots-container");
-  if (!data || !container) return;
+  if (!data) return;
 
-  container.innerHTML = "";
+  // ดึง Container ของทั้งหน้า User และ Admin
+  const userContainer = document.getElementById("slots-container");
+  const adminContainer = document.getElementById("admin-slots-container");
+
+  let slotsHtml = "";
   for (let i = 0; i < 6; i++) {
     const isOccupied = data[`slot_${i}`];
-    container.innerHTML += `
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="parking-slot ${isOccupied ? "bg-occupied" : "bg-vacant"}">
-                    <i class="bi ${isOccupied ? "bi-car-front-fill" : "bi-p-square"} fs-1 mb-2"></i>
-                    <span class="fw-bold">ช่อง ${i + 1}</span>
-                    <small class="opacity-75">${isOccupied ? "ไม่ว่าง" : "ว่าง"}</small>
+    slotsHtml += `
+            <div class="col-4 col-md-2">
+                <div class="parking-slot ${isOccupied ? "bg-occupied" : "bg-vacant"}" style="padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #eee;">
+                    <i class="bi ${isOccupied ? "bi-car-front-fill" : "bi-p-square"} fs-3"></i>
+                    <div class="fw-bold" style="font-size: 0.8rem;">ช่อง ${i + 1}</div>
+                    <span style="font-size: 0.7rem;">${isOccupied ? "ไม่ว่าง" : "ว่าง"}</span>
                 </div>
             </div>`;
   }
+
+  // ส่งข้อมูลไปแสดงผล (ถ้าหน้าไหนถูกเปิดอยู่ ตัวแปรนั้นจะมีค่าและแสดงผลทันที)
+  if (userContainer) userContainer.innerHTML = slotsHtml;
+  if (adminContainer) adminContainer.innerHTML = slotsHtml;
 });
 
 // --- ADMIN DATA & DASHBOARD ---
