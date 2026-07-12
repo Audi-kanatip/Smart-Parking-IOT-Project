@@ -84,19 +84,37 @@ The system provides a responsive web dashboard designed for both everyday users 
 
 | Feature | Description | Preview |
 | :--- | :--- | :--- |
-| **Slot Status** | Live updates when a vehicle enters or exits any parking space. | <img src="image/dash_have1.png" width="150"> |
-| **User Search** | Enter a license plate to view vehicle status, entry photo, and current billing. | <img src="image/user_serch.png" width="150"> |
-| **Logs** | Tracks vehicle entry and exit history for administrative oversight. | <img src="image/log.png" width="150"> |
-| **Analytics** | Comprehensive revenue charts, peak-time graphs, and parking duration statistics. | <img src="image/chart.png" width="150"> |
+| **Slot Status** | Live updates when a vehicle enters or exits any parking space. | <img src="image/dash_have1.png" width="200"> |
+| **User Search** | Enter a license plate to view vehicle status, entry photo, and current billing. | <img src="image/user_serch.png" width="200"> |
+| **Logs** | Tracks vehicle entry and exit history for administrative oversight. | <img src="image/log.png" width="200"> |
+| **Analytics** | Comprehensive revenue charts, peak-time graphs, and parking duration statistics. | <img src="image/chart.png" width="200"> |
 
 ### ⚡ Real-Time Synchronization (Latency Test)
 
 To ensure a seamless experience, we conducted speed tests for data synchronization between the physical ultrasonic sensors and the web interface. The system guarantees near real-time updates:
 
-| Status Indicator | Before Parking (Slot 6) | After Parking (Slot 6) | Update Latency |
-| :--- | :---: | :---: | :--- |
-| **Physical LED** | <img src="image/6_LED.jpg" width="150"> | <img src="image/5_LED.jpg" width="150"> | Within 3 Seconds |
-| **Web Dashboard**| <img src="image/dash_empty.png" width="150"> | <img src="image/dash_have1.png" width="150"> | Within 10 Seconds |
+<div align="center">
+  <table width="100%">
+    <tr>
+      <th width="20%">Status Indicator</th>
+      <th width="30%">Before Parking (Slot 6)</th>
+      <th width="30%">After Parking (Slot 6)</th>
+      <th width="20%">Update Latency</th>
+    </tr>
+    <tr>
+      <td><b>Physical LED</b></td>
+      <td><img src="image/6_LED.jpg" width="100%"></td>
+      <td><img src="image/5_LED.jpg" width="100%"></td>
+      <td align="center">Within 3 Seconds</td>
+    </tr>
+    <tr>
+      <td><b>Web Dashboard</b></td>
+      <td><img src="image/dash_empty.png" width="100%"></td>
+      <td><img src="image/dash_have1.png" width="100%"></td>
+      <td align="center">Within 10 Seconds</td>
+    </tr>
+  </table>
+</div>
 
 ---
 
