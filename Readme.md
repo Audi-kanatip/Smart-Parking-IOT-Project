@@ -61,7 +61,7 @@ The system operates across three main layers:
 <div align="center">
   <p><b>Watch the complete automated workflow from entry to exit in our demo video:</b></p>
   
-  <a href="https://youtube.com/shorts/UfzJ6c02M-c?si=ElqcdwrCKBUAIkVk">
+  <a href="https://youtube.com/shorts/UfzJ6c02M-c?si=ElqcdwrCKBUAIkVk" target="_blank">
     <img src="https://img.youtube.com/vi/UfzJ6c02M-c/0.jpg" alt="Smart Parking System Demo" width="600" style="border: 5px solid #ddd; border-radius: 10px;">
   </a>
   
