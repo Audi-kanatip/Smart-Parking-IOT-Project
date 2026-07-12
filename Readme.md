@@ -82,12 +82,42 @@ The system provides a responsive web dashboard designed for both everyday users 
 
 ### 🌟 Core Features
 
-| Feature | Description | Preview |
-| :--- | :--- | :--- |
-| **Slot Status** | Live updates when a vehicle enters or exits any parking space. | <img src="image/dash_have1.png" width="200"> |
-| **User Search** | Enter a license plate to view vehicle status, entry photo, and current billing. | <img src="image/user_serch.png" width="200"> |
-| **Logs** | Tracks vehicle entry and exit history for administrative oversight. | <img src="image/log.png" width="200"> |
-| **Analytics** | Comprehensive revenue charts, peak-time graphs, and parking duration statistics. | <img src="image/chart.png" width="200"> |
+นี่คือตารางที่ปรับให้ "กางเต็มหน้าจอ" และจัดรูปแบบให้สวยงามสอดคล้องกับตารางก่อนหน้านี้ครับ ผมใช้ตาราง HTML แบบเดิมเพื่อให้ทุกอย่างใน README ของคุณดูเป็นธีมเดียวกันครับ
+
+HTML
+### 🌟 Core Features
+
+The web dashboard is designed to provide seamless monitoring for both users and administrators.
+
+<div align="center">
+  <table width="100%">
+    <tr>
+      <th width="20%">Feature</th>
+      <th width="40%">Description</th>
+      <th width="40%">Preview</th>
+    </tr>
+    <tr>
+      <td><b>Slot Status</b></td>
+      <td>Live updates when a vehicle enters or exits any parking space.</td>
+      <td><img src="image/dash_have1.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td><b>User Search</b></td>
+      <td>Enter a license plate to view vehicle status, entry photo, and current billing.</td>
+      <td><img src="image/user_serch.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td><b>Logs</b></td>
+      <td>Tracks vehicle entry and exit history for administrative oversight.</td>
+      <td><img src="image/log.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td><b>Analytics</b></td>
+      <td>Comprehensive revenue charts, peak-time graphs, and parking duration statistics.</td>
+      <td><img src="image/chart.png" width="100%"></td>
+    </tr>
+  </table>
+</div>
 
 ### ⚡ Real-Time Synchronization (Latency Test)
 
