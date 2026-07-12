@@ -55,7 +55,7 @@ Here is an overview of the hardware components and the final assembly of the Sma
       <td><img src="image/overall_project.jpg" width="150"></td>
       <td><img src="image/overall_project2.jpg" width="150"></td>
       <td><img src="image/ready_lcd.jpg" width="150"></td>
-      <td><img src="image/entry1.jpg" width="150">></td>
+      <td><img src="image/entry1.jpg" width="150"></td>
       <td><img src="image/entry2.jpg" width="150"></td>
     </tr>
     <tr>
@@ -78,10 +78,10 @@ The system provides a responsive web dashboard designed for both everyday users 
 
 | Feature | Description | Preview |
 | :--- | :--- | :--- |
-| **Slot Status** | Live updates when a vehicle enters or exits any parking space. | <img src="image/dash_have1.png" width="100"> |
-| **User Search** | Enter a license plate to view vehicle status, entry photo, and current billing. | <img src="image/user_serch.png" width="100"> |
-| **Logs** | Tracks vehicle entry and exit history for administrative oversight. | <img src="image/log.png" width="100"> |
-| **Analytics** | Comprehensive revenue charts, peak-time graphs, and parking duration statistics. | <img src="image/chart.png" width="100"> |
+| **Slot Status** | Live updates when a vehicle enters or exits any parking space. | <img src="image/dash_have1.png" width="150"> |
+| **User Search** | Enter a license plate to view vehicle status, entry photo, and current billing. | <img src="image/user_serch.png" width="150"> |
+| **Logs** | Tracks vehicle entry and exit history for administrative oversight. | <img src="image/log.png" width="150"> |
+| **Analytics** | Comprehensive revenue charts, peak-time graphs, and parking duration statistics. | <img src="image/chart.png" width="150"> |
 
 ### ⚡ Real-Time Synchronization (Latency Test)
 
@@ -89,8 +89,8 @@ To ensure a seamless experience, we conducted speed tests for data synchronizati
 
 | Status Indicator | Before Parking (Slot 6) | After Parking (Slot 6) | Update Latency |
 | :--- | :---: | :---: | :--- |
-| **Physical LED** | <img src="image/6_LED.jpg" width="100"> | <img src="image/5_LED.jpg" width="100"> | Within 3 Seconds |
-| **Web Dashboard**| <img src="image/dash_empty.png" width="100"> | <img src="image/dash_have1.png" width="100"> | Within 10 Seconds |
+| **Physical LED** | <img src="image/6_LED.jpg" width="150"> | <img src="image/5_LED.jpg" width="150"> | Within 3 Seconds |
+| **Web Dashboard**| <img src="image/dash_empty.png" width="150"> | <img src="image/dash_have1.png" width="150"> | Within 10 Seconds |
 
 ---
 
