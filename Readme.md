@@ -25,23 +25,51 @@ The system operates across three main layers:
 
 ## 🛠 Tech Stack
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Edge Hardware** | ESP32, ESP32-CAM, Ultrasonic Sensors (HC-SR04), Servo Motors |
-| **Communication** | ESP-NOW (Local), MQTT (Broker: HiveMQ), HTTPS/JSON |
-| **Backend/Cloud** | Google Firebase (Real-time DB, Firestore, Storage, Cloud Functions) |
-| **AI/Vision** | OpenCV, AI for Thai (LPR API) |
-| **Frontend** | HTML5, JavaScript, Chart.js, Bootstrap |
+<div align="center">
+  <table width="100%">
+    <tr>
+      <th width="25%">Layer</th>
+      <th width="75%">Technologies</th>
+    </tr>
+    <tr>
+      <td><b>Edge Hardware</b></td>
+      <td>ESP32, ESP32-CAM, Ultrasonic Sensors (HC-SR04), Servo Motors</td>
+    </tr>
+    <tr>
+      <td><b>Communication</b></td>
+      <td>ESP-NOW (Local), MQTT (Broker: HiveMQ), HTTPS/JSON</td>
+    </tr>
+    <tr>
+      <td><b>Backend/Cloud</b></td>
+      <td>Google Firebase (Real-time DB, Firestore, Storage, Cloud Functions)</td>
+    </tr>
+    <tr>
+      <td><b>AI/Vision</b></td>
+      <td>OpenCV, AI for Thai (LPR API)</td>
+    </tr>
+    <tr>
+      <td><b>Frontend</b></td>
+      <td>HTML5, JavaScript, Chart.js</td>
+    </tr>
+  </table>
+</div>
 
 ---
 
 ## 🎥 Operational Showcase
 
-> **System Demonstration**
-> 
-> Watch our automated parking system in action. This video covers the end-to-end workflow: from vehicle entry detection and AI-based license plate recognition, to the real-time billing calculation and automated gate control during exit.
->
-> **[▶ Click here to watch the full project demo on YouTube](YOUR_YOUTUBE_URL)**
+<div align="center">
+  <p><b>Watch the complete automated workflow from entry to exit in our demo video:</b></p>
+  
+  <a href="https://youtube.com/shorts/UfzJ6c02M-c?si=ElqcdwrCKBUAIkVk">
+    <img src="https://img.youtube.com/vi/UfzJ6c02M-c/0.jpg" alt="Smart Parking System Demo" width="600" style="border: 5px solid #ddd; border-radius: 10px;">
+  </a>
+  
+  <p><i>Click the image above to watch the full project demo on YouTube.</i></p>
+</div>
+
+> **System Overview:**
+> This video demonstrates our automated parking workflow: starting from vehicle detection and AI-powered license plate recognition, through to real-time billing and seamless automated gate control.
 
 ---
 
@@ -80,11 +108,6 @@ Here is an overview of the hardware components and the final assembly of the Sma
 
 The system provides a responsive web dashboard designed for both everyday users and administrators to monitor parking operations seamlessly.
 
-### 🌟 Core Features
-
-นี่คือตารางที่ปรับให้ "กางเต็มหน้าจอ" และจัดรูปแบบให้สวยงามสอดคล้องกับตารางก่อนหน้านี้ครับ ผมใช้ตาราง HTML แบบเดิมเพื่อให้ทุกอย่างใน README ของคุณดูเป็นธีมเดียวกันครับ
-
-HTML
 ### 🌟 Core Features
 
 The web dashboard is designed to provide seamless monitoring for both users and administrators.
