@@ -54,14 +54,20 @@ Here is an overview of the hardware components and the final assembly of the Sma
     <tr>
       <td><img src="image/overall_project.jpg" width="150"></td>
       <td><img src="image/overall_project2.jpg" width="150"></td>
-      <td><img src="image/ready_lcd.jpg" width="150"></td>
+    </tr>
+    <tr>
       <td><img src="image/entry1.jpg" width="150"></td>
       <td><img src="image/entry2.jpg" width="150"></td>
     </tr>
     <tr>
+      <td><img src="image/ready_lcd.jpg" width="150"></td>
       <td><img src="image/fee_lcd.jpg" width="150"></td>
+    </tr>
+        <tr>
       <td><img src="image/exit1.jpg" width="150"></td>
       <td><img src="image/exit2.jpg" width="150"></td>
+    </tr>
+        <tr>
       <td><img src="image/sorryfull_lcd.jpg" width="150"></td>
       <td><img src="image/have4_lcd.jpg" width="150"></td>
     </tr>
